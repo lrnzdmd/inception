@@ -1,0 +1,133 @@
+services:
+
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - inception_net
+    restart: on-failure
+    env_file: .env
+    secrets:
+      - db_password
+      - db_admin_password
+      - db_root_password
+
+  redis:
+    build: ./requirements/bonus/redis
+    container_name: redis
+    networks:
+      - inception_net
+    restart: unless-stopped
+
+  wordpress:
+    build: ./requirements/wordpress
+    container_name: wordpress
+    env_file: .env
+    volumes:
+      - wp_volume:/var/www/html
+    networks:
+      - inception_net
+    depends_on:
+      - mariadb
+      - redis
+    restart: unless-stopped
+    secrets:
+      - db_password
+      - wp_user_password
+      - wp_admin_password
+
+  static:
+    build: ./requirements/bonus/static
+    container_name: static
+    networks:
+      - inception_net
+    restart: unless-stopped
+
+  adminer:
+    build: ./requirements/bonus/adminer
+    container_name: adminer
+    networks:
+      - inception_net
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+
+  nginx:
+      build: ./requirements/nginx
+      container_name: nginx
+      env_file: .env
+      volumes:
+        - wp_volume:/var/www/html
+      networks:
+        - inception_net
+      depends_on:
+        - wordpress
+        - static
+      ports:
+        - "443:443"
+      restart: unless-stopped
+
+  ftp:
+    build: ./requirements/bonus/ftp
+    container_name: ftp
+    env_file: .env
+    volumes:
+      - wp_volume:/var/www/html
+    networks:
+      - inception_net
+    ports:
+      - "21:21"
+      - "21000-21010:21000-21010"
+    restart: unless-stopped
+    secrets:
+      - ftp_password
+
+  portainer:
+    build: ./requirements/bonus/portainer
+    container_name: portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - inception_net
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/${SUDO_USER:-$USER}/data/mysql
+      o: bind
+  wp_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/${SUDO_USER:-$USER}/data/wordpress
+      o: bind
+  portainer_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/${SUDO_USER:-$USER}/data/portainer
+      o: bind
+
+networks:
+    inception_net:
+      driver: bridge
+
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  db_admin_password:
+    file: ../secrets/db_admin_password.txt
+  wp_user_password:
+    file: ../secrets/wp_user_password.txt
+  wp_admin_password:
+    file: ../secrets/wp_admin_password.txt
+  ftp_password:
+    file: ../secrets/ftp_password.txt
