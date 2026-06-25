@@ -99,19 +99,19 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/${SUDO_USER:-$USER}/data/mysql
+      device: ${HOME}/data/mysql
       o: bind
   wp_volume:
     driver: local
     driver_opts:
       type: none
-      device: /home/${SUDO_USER:-$USER}/data/wordpress
+      device: ${HOME}/data/wordpress
       o: bind
   portainer_data:
     driver: local
     driver_opts:
       type: none
-      device: /home/${SUDO_USER:-$USER}/data/portainer
+      device: ${HOME}/data/portainer
       o: bind
 
 networks:

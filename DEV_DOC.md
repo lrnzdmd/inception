@@ -2,19 +2,11 @@
 
 ## Prerequisites
 
-- VirtualBox with a Debian VM (headless)
+- VirtualBox with a Debian VM 
 - Docker and Docker Compose installed inside the VM
 - Make installed inside the VM
-- Port 443 and 21 forwarded from host to VM via VirtualBox NAT
 
-To set up port forwarding from the host machine:
-
-```bash
-VBoxManage modifyvm "vm_name" --natpf1 "https,tcp,,443,,443"
-VBoxManage modifyvm "vm_name" --natpf1 "ftp,tcp,,21,,21"
-```
-
-Add the following entries to `/etc/hosts` on both the host machine and inside the VM:
+Add the following entries to `/etc/hosts` inside the VM:
 
 ```
 127.0.0.1 lde-medi.42.fr
@@ -95,10 +87,6 @@ Contains one password per file. Each file is mounted read-only inside the releva
 
 Inside each `init.sh`, passwords are read from the mounted secret file rather than from environment variables:
 
-```sh
-DB_PASSWORD=$(cat /run/secrets/db_password)
-```
-
 ### Creating the secret files
 
 Before the first run, create all secret files manually:
@@ -116,14 +104,6 @@ echo "your_password_here" > secrets/ftp_password.txt
 ---
 
 ## Building and launching the project
-
-Create the data directories before the first run:
-
-```bash
-mkdir -p ~/data/mysql
-mkdir -p ~/data/wordpress
-mkdir -p ~/data/portainer
-```
 
 From the repository root:
 
