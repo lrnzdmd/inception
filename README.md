@@ -12,16 +12,26 @@ The mandatory stack consists of NGINX as the sole entrypoint with TLS, WordPress
 
 ### Prerequisites
 
-- A Debian VM with Docker and Docker Compose installed
-- The `secrets/` directory populated with password files (see `DEV_DOC.md`)
-- `/etc/hosts` configured with `lde-medi.42.fr` pointing to `127.0.0.1`
+- A VM with Docker and Docker Compose installed
+- A `secrets/` directory in the root of the project populated with password files (see `DEV_DOC.md`)
+- A .env file in srcs/ with the environment variables needed (see`DEV_DOC.md`)
+- `/etc/hosts` configured with `lde-medi.42.fr` and `bonus.lde-medi.42.fr` pointing to `127.0.0.1`
 
 ### Usage
 
 ```bash
-make        # build and start all services
-make down   # stop all services
-make fclean # stop all services and remove all data
+make all       #Create data directories and launch the stack (default)"
+make setup     #Create data directories only"
+make up        #Build and start all containers in background"
+make down      #Stop and remove containers (volumes preserved)"
+make stop      #Stop containers without removing them"
+make start     #Restart containers stopped with 'stop'"
+make logs      #Follow logs of all containers in real time"
+make status    #Show status of all containers"
+make clean     #Remove containers, volumes and images"
+make fclean    #clean + delete data directories + docker system prune"
+make re        #fclean + all (full rebuild from scratch)"
+make help      #Show this help message"
 ```
 
 ## Project description
@@ -36,7 +46,7 @@ The infrastructure runs entirely inside Docker containers managed by Docker Comp
 
 **Docker Network vs Host Network** — host network mode removes isolation and exposes all container ports directly on the host interface, which is a security risk. A Docker bridge network creates an isolated virtual network where containers communicate by service name, and only explicitly declared ports are reachable from outside.
 
-**Docker Volumes vs Bind Mounts** — bind mounts directly expose a host directory path inside the container, creating a tight coupling to the host filesystem structure. Named volumes are managed by Docker and are more portable. This project uses named volumes backed by specific host paths to satisfy the subject requirement of storing data under `~/data/`.
+**Docker Volumes vs Bind Mounts** — bind mounts directly expose a host directory path inside the container, creating a tight coupling to the host filesystem structure. Named volumes are managed by Docker and are more portable.
 
 ## Resources
 

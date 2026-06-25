@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- VirtualBox with a Debian VM 
+- VirtualBox with a VM
 - Docker and Docker Compose installed inside the VM
 - Make installed inside the VM
 
@@ -165,19 +165,6 @@ rm -rf ~/data/wordpress/*
 rm -rf ~/data/portainer/*
 docker compose up --build
 ```
-
----
-
-## Initialization logic
-
-Each container runs an `init.sh` script as its entrypoint. The script reads passwords from `/run/secrets/` and checks for a sentinel before running setup commands, preventing data loss on restart.
-
-| Container | Sentinel |
-|---|---|
-| mariadb | `/var/lib/mysql/mysql` |
-| wordpress | `/var/www/html/wp-config.php` |
-
-If the sentinel exists, the setup phase is skipped and the service starts directly.
 
 ---
 
