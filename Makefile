@@ -1,6 +1,6 @@
-COMPOSE_FILE	= srcs/docker-compose.yml
-DATA_DIR		= $(HOME)/data
-DIRS			= $(DATA_DIR)/mysql $(DATA_DIR)/wordpress $(DATA_DIR)/portainer secrets
+COMPOSE_FILE    = srcs/docker-compose.yml
+DATA_DIR        = $(HOME)/data
+DIRS            = $(DATA_DIR)/mysql $(DATA_DIR)/wordpress $(DATA_DIR)/portainer secrets
 
 all: setup up
 
@@ -9,22 +9,22 @@ setup:
 	@mkdir -p $(DIRS)
 
 up: setup
-	sudo docker compose -f $(COMPOSE_FILE) up --build -d
+	docker compose -f $(COMPOSE_FILE) up --build -d
 
 down:
-	sudo docker compose -f $(COMPOSE_FILE) down
+	docker compose -f $(COMPOSE_FILE) down
 
 stop:
-	sudo docker compose -f $(COMPOSE_FILE) stop
+	docker compose -f $(COMPOSE_FILE) stop
 
 start:
-	sudo docker compose -f $(COMPOSE_FILE) start
+	docker compose -f $(COMPOSE_FILE) start
 
 logs:
-	sudo docker compose -f $(COMPOSE_FILE) logs -f
+	docker compose -f $(COMPOSE_FILE) logs -f
 
 status:
-	sudo docker compose -f $(COMPOSE_FILE) ps
+	docker compose -f $(COMPOSE_FILE) ps
 
 help:
 	@echo "Usage: make [target]"
@@ -44,16 +44,17 @@ help:
 	@echo "  help      Show this help message"
 
 clean: down
-	@echo "Removing volumes..."
-	sudo docker compose -f $(COMPOSE_FILE) down -v
+	@echo "Removing containers, networks and volumes..."
+	docker compose -f $(COMPOSE_FILE) down -v
 	@echo "Removing images..."
-	sudo docker rmi $$(sudo docker images -q) 2>/dev/null || true
+	docker rmi $$(docker images -q) 2>/dev/null || true
 
 fclean: clean
-	@echo "Removing data directories..."
-	sudo rm -rf $(DIRS)
+	@echo "Removing data directories via Docker helper..."
+	docker run --rm -v $(DATA_DIR):/data alpine rm -rf /data/mysql /data/wordpress /data/portainer
+	rm -rf secrets $(DATA_DIR)
 	@echo "Pruning docker system..."
-	sudo docker system prune -af
+	docker system prune -af
 
 re: fclean all
 
