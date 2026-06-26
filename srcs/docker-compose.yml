@@ -8,6 +8,11 @@ services:
     networks:
       - inception_net
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$DB_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     env_file: .env
     secrets:
       - db_password
@@ -33,6 +38,11 @@ services:
       - mariadb
       - redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "printf '' > /dev/tcp/127.0.0.1/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     secrets:
       - db_password
       - wp_user_password
@@ -68,6 +78,11 @@ services:
       ports:
         - "443:443"
       restart: unless-stopped
+      healthcheck:
+        test: ["CMD", "curl", "-k", "https://localhost"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
 
   ftp:
     build: ./requirements/bonus/ftp

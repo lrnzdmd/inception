@@ -65,7 +65,7 @@ Non-sensitive configuration (domain name, usernames, emails) is stored in `srcs/
 docker ps
 ```
 
-All containers should show `Up` in the STATUS column. If any container shows `Restarting` or `Exited`, check its logs:
+All containers should show `Up` in the STATUS column. If any container shows `Restarting` or `Exited` or `Unhealthy`, check its logs:
 
 ```bash
 docker logs <container_name>
