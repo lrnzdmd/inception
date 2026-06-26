@@ -1,6 +1,6 @@
 COMPOSE_FILE    = srcs/docker-compose.yml
 DATA_DIR        = $(HOME)/data
-DIRS            = $(DATA_DIR)/mysql $(DATA_DIR)/wordpress $(DATA_DIR)/portainer secrets
+DIRS            = $(DATA_DIR)/mysql $(DATA_DIR)/wordpress $(DATA_DIR)/uptime-kuma secrets
 
 all: setup up
 

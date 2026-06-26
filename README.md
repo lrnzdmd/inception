@@ -6,7 +6,7 @@
 
 Inception is a system administration project built around Docker. The goal is to set up a small infrastructure composed of multiple services, each running in its own container, orchestrated with Docker Compose inside a virtual machine.
 
-The mandatory stack consists of NGINX as the sole entrypoint with TLS, WordPress with php-fpm, and MariaDB. Bonus services include Redis, FTP, Adminer, a static website, and Portainer.
+The mandatory stack consists of NGINX as the sole entrypoint with TLS, WordPress with php-fpm, and MariaDB. Bonus services include Redis, FTP, Adminer, a static website, and Uptime Kuma.
 
 ## Instructions
 

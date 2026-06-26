@@ -11,6 +11,8 @@ Add the following entries to `/etc/hosts` inside the VM:
 ```
 127.0.0.1 lde-medi.42.fr
 127.0.0.1 bonus.lde-medi.42.fr
+127.0.0.1 adminer.lde-medi.42.fr
+127.0.0.1 kuma.lde-medi.42.fr
 ```
 
 ---
@@ -48,7 +50,7 @@ inception/
             ├── ftp/
             ├── redis/
             ├── static/
-            └── portainer/
+            └── uptime-kuma/
 ```
 
 ---
@@ -154,7 +156,7 @@ All persistent data is stored outside the containers in named volumes backed by 
 |---|---|---|---|
 | db_data | ~/data/mysql | /var/lib/mysql | mariadb |
 | wp_volume | ~/data/wordpress | /var/www/html | wordpress, nginx, ftp |
-| portainer_data | ~/data/portainer | /data | portainer |
+| uptime_data | ~/data/uptime-kuma | /data | uptime-kuma |
 
 Data in these directories survives `docker compose down`. To completely reset the project state:
 
@@ -181,4 +183,4 @@ All containers communicate over a single internal bridge network named `inceptio
 | redis | 6379 | — |
 | adminer | 8080 | — |
 | static | 80 | — |
-| portainer | 9000 | — |
+| uptime-kuma | 9000 | — |

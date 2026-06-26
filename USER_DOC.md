@@ -6,8 +6,8 @@
 |---|---|---|
 | WordPress | Main website with CMS | https://lde-medi.42.fr |
 | Static site | Static HTML/CSS website | https://bonus.lde-medi.42.fr |
-| Adminer | Database management interface | internal only |
-| Portainer | Container management interface | internal only |
+| Adminer | Database management interface | https://adminer.lde-medi.42.fr |
+| Uptime Kuma | Container uptime interface | ihttps://kuma.lde-medi.42.fr |
 | FTP | File access to WordPress volume | lde-medi.42.fr port 21 |
 | Redis | Object cache for WordPress | internal only |
 | MariaDB | Database | internal only |

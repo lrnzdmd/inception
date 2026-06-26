@@ -84,15 +84,14 @@ services:
     secrets:
       - ftp_password
 
-  portainer:
-    build: ./requirements/bonus/portainer
-    container_name: portainer
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-    networks:
-      - inception_net
-    restart: unless-stopped
+  uptime-kuma:
+      build: ./requirements/bonus/uptime-kuma
+      container_name: uptime-kuma
+      volumes:
+        - uptime_data:/app/data
+      networks:
+        - inception_net
+      restart: unless-stopped
 
 volumes:
   db_data:
@@ -107,11 +106,11 @@ volumes:
       type: none
       device: ${HOME}/data/wordpress
       o: bind
-  portainer_data:
+  uptime_data:
     driver: local
     driver_opts:
       type: none
-      device: ${HOME}/data/portainer
+      device: ${HOME}/data/uptime-kuma
       o: bind
 
 networks:
