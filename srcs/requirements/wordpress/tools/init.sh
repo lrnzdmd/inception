@@ -68,5 +68,5 @@ trap - EXIT
 
 echo "[Wordpress] Launching php-fpm."
 
-exec php-fpm7.4 --nodaemonize
+exec php-fpm8.2 --nodaemonize
 
