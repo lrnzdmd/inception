@@ -1,6 +1,7 @@
 services:
 
   mariadb:
+    image: mariadb
     build: ./requirements/mariadb
     container_name: mariadb
     volumes:
@@ -20,6 +21,7 @@ services:
       - db_root_password
 
   redis:
+    image: redis
     build: ./requirements/bonus/redis
     container_name: redis
     networks:
@@ -27,6 +29,7 @@ services:
     restart: unless-stopped
 
   wordpress:
+    image: wordpress
     build: ./requirements/wordpress
     container_name: wordpress
     env_file: .env
@@ -49,6 +52,7 @@ services:
       - wp_admin_password
 
   static:
+    image: static
     build: ./requirements/bonus/static
     container_name: static
     networks:
@@ -56,6 +60,7 @@ services:
     restart: unless-stopped
 
   adminer:
+    image: adminer
     build: ./requirements/bonus/adminer
     container_name: adminer
     networks:
@@ -65,26 +70,28 @@ services:
     restart: unless-stopped
 
   nginx:
-      build: ./requirements/nginx
-      container_name: nginx
-      env_file: .env
-      volumes:
-        - wp_volume:/var/www/html
-      networks:
-        - inception_net
-      depends_on:
-        - wordpress
-        - static
-      ports:
-        - "443:443"
-      restart: unless-stopped
-      healthcheck:
-        test: ["CMD", "curl", "-k", "https://localhost"]
-        interval: 10s
-        timeout: 5s
-        retries: 3
+    image: nginx
+    build: ./requirements/nginx
+    container_name: nginx
+    env_file: .env
+    volumes:
+      - wp_volume:/var/www/html
+    networks:
+      - inception_net
+    depends_on:
+      - wordpress
+      - static
+    ports:
+      - "443:443"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-k", "https://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   ftp:
+    image: ftp
     build: ./requirements/bonus/ftp
     container_name: ftp
     env_file: .env
@@ -100,13 +107,14 @@ services:
       - ftp_password
 
   uptime-kuma:
-      build: ./requirements/bonus/uptime-kuma
-      container_name: uptime-kuma
-      volumes:
-        - uptime_data:/app/data
-      networks:
-        - inception_net
-      restart: unless-stopped
+    image: uptime-kuma
+    build: ./requirements/bonus/uptime-kuma
+    container_name: uptime-kuma
+    volumes:
+      - uptime_data:/app/data
+    networks:
+      - inception_net
+    restart: unless-stopped
 
 volumes:
   db_data:
