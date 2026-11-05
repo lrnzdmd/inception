@@ -10,7 +10,7 @@ services:
       - inception_net
     restart: on-failure
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$DB_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$(cat /run/secrets/db_root_password)\" --silent"]
       interval: 10s
       timeout: 5s
       retries: 3

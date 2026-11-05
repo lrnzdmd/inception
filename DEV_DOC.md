@@ -65,6 +65,7 @@ Contains only non-sensitive values — no passwords. Tracked by `.gitignore`, ne
 
 ```
 DOMAIN_NAME=lde-medi.42.fr
+MYSQL_ADMIN_USER=dbking
 MYSQL_USER=lde-medi
 MYSQL_DB=inception_db
 WP_ADMIN_USER=me

@@ -51,7 +51,7 @@ clean: down
 
 fclean: clean
 	@echo "Removing data directories via Docker helper..."
-	docker run --rm -v $(DATA_DIR):/data alpine rm -rf /data/mysql /data/wordpress /data/portainer
+	docker run --rm -v $(DATA_DIR):/data debian:bookworm rm -rf /data/mysql /data/wordpress /data/uptime-kuma
 	rm -rf secrets $(DATA_DIR)
 	@echo "Pruning docker system..."
 	docker system prune -af

@@ -1,2 +1,4 @@
 secrets/
 srcs/.env
+.DS_Store
+bckups/
