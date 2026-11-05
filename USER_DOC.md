@@ -7,10 +7,27 @@
 | WordPress | Main website with CMS | https://lde-medi.42.fr |
 | Static site | Static HTML/CSS website | https://bonus.lde-medi.42.fr |
 | Adminer | Database management interface | https://adminer.lde-medi.42.fr |
-| Uptime Kuma | Container uptime interface | ihttps://kuma.lde-medi.42.fr |
+| Uptime Kuma | Container uptime interface | https://kuma.lde-medi.42.fr |
 | FTP | File access to WordPress volume | lde-medi.42.fr port 21 |
 | Redis | Object cache for WordPress | internal only |
 | MariaDB | Database | internal only |
+
+---
+
+## Accessing the files via FTP
+
+The FTP server gives read/write access to the WordPress files (`/var/www/html`). Log in with the `FTP_USER` defined in `srcs/.env` and the password in `secrets/ftp_password.txt`. Passive mode is used (ports 21000-21010).
+
+```bash
+# From the VM (interactive client)
+ftp -p 127.0.0.1 21
+
+# Or with curl: list files, then upload one
+curl -u "$FTP_USER:$(cat secrets/ftp_password.txt)" ftp://127.0.0.1/
+curl -u "$FTP_USER:$(cat secrets/ftp_password.txt)" -T test.txt ftp://127.0.0.1/wp-content/
+```
+
+Uploaded files are owned by `www-data` (the FTP user shares its uid), so WordPress can use and modify them. To connect from another machine, set `FTP_PASV_ADDRESS` in `srcs/.env` to the VM IP address and rebuild.
 
 ---
 

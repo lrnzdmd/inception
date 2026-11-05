@@ -61,7 +61,7 @@ This project separates non-sensitive configuration from sensitive credentials.
 
 ### `srcs/.env`
 
-Contains only non-sensitive values — no passwords. Tracked by `.gitignore`, never committed.
+Contains only non-sensitive values — no passwords. Ignored via `.gitignore`, never committed.
 
 ```
 DOMAIN_NAME=lde-medi.42.fr
@@ -73,6 +73,9 @@ WP_ADMIN_EMAIL=me@mail.com
 WP_USER=example
 WP_USER_EMAIL=ex@mp.le
 FTP_USER=meftp
+# Optional: address announced in FTP passive mode (default 127.0.0.1).
+# Set it to the VM IP to use FTP from outside the VM.
+FTP_PASV_ADDRESS=127.0.0.1
 ```
 
 ### `secrets/`
@@ -120,6 +123,37 @@ Or directly from `srcs/`:
 docker compose up --build
 ```
 
+### Makefile targets
+
+| Target | Effect |
+|---|---|
+| `make` / `make all` | Create `/home/lde-medi/data/*` directories, build images and start the stack |
+| `make setup` | Create the data directories only |
+| `make up` | Build and start all containers in background |
+| `make down` | Stop and remove containers (data preserved) |
+| `make stop` / `make start` | Stop / restart containers without removing them |
+| `make logs` | Follow logs of all containers |
+| `make status` | Show containers status (`docker compose ps`) |
+| `make clean` | Remove containers, volumes, network and project images (data on disk preserved) |
+| `make fclean` | `clean` + delete `/home/lde-medi/data` + Docker build cache (secrets are kept) |
+| `make re` | `fclean` + `all` |
+| `make help` | List the targets |
+
+---
+
+## Changing a service port
+
+After any change, rebuild with `make down && make up`.
+
+| Service | What to change |
+|---|---|
+| NGINX (published port, e.g. 8443) | `ports:` of `nginx` in `srcs/docker-compose.yml` → `"8443:443"`. WordPress builds its URL from the request Host header, so `https://lde-medi.42.fr:8443` works without touching the database. |
+| NGINX (internal port) | `listen` directives in `nginx/conf/nginx.conf`, the `ports:` mapping and the `curl` healthcheck URL in the compose file |
+| WordPress / php-fpm (9000) | `listen` in `wordpress/conf/www.conf`, `fastcgi_pass wordpress:<port>` in `nginx/conf/nginx.conf`, `/dev/tcp/127.0.0.1/<port>` healthcheck in the compose file |
+| MariaDB (3306) | `port` in `mariadb/conf/my.cnf`; `DB_HOST` in `wp-config.php` (`wp config set DB_HOST mariadb:<port>`, or `make fclean` to reinstall) and `-P <port>` in the `mysqladmin ping` of `wordpress/tools/init.sh` |
+| Redis (6379) | `--port <port>` in the redis `CMD` and `WP_REDIS_PORT` in `wordpress/tools/init.sh` / `wp-config.php` |
+| FTP (21) | add `listen_port=<port>` to the vsftpd config in `ftp/tools/init.sh` and update the `ports:` mapping |
+
 ---
 
 ## Managing containers and volumes
@@ -155,17 +189,17 @@ All persistent data is stored outside the containers in named volumes backed by 
 
 | Volume | Host path | Container path | Service |
 |---|---|---|---|
-| db_data | ~/data/mysql | /var/lib/mysql | mariadb |
-| wp_volume | ~/data/wordpress | /var/www/html | wordpress, nginx, ftp |
-| uptime_data | ~/data/uptime-kuma | /data | uptime-kuma |
+| db_data | /home/lde-medi/data/mysql | /var/lib/mysql | mariadb |
+| wp_volume | /home/lde-medi/data/wordpress | /var/www/html | wordpress, nginx, ftp |
+| uptime_data | /home/lde-medi/data/uptime-kuma | /app/data | uptime-kuma |
 
 Data in these directories survives `docker compose down`. To completely reset the project state:
 
 ```bash
 docker compose down
-rm -rf ~/data/mysql/*
-rm -rf ~/data/wordpress/*
-rm -rf ~/data/portainer/*
+sudo rm -rf /home/lde-medi/data/mysql/*
+sudo rm -rf /home/lde-medi/data/wordpress/*
+sudo rm -rf /home/lde-medi/data/uptime-kuma/*
 docker compose up --build
 ```
 
@@ -182,6 +216,6 @@ All containers communicate over a single internal bridge network named `inceptio
 | wordpress | 9000 | — |
 | mariadb | 3306 | — |
 | redis | 6379 | — |
-| adminer | 8080 | — |
+| adminer | 9000 | — |
 | static | 80 | — |
-| uptime-kuma | 9000 | — |
+| uptime-kuma | 3001 | — |

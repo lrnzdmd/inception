@@ -1,7 +1,7 @@
 services:
 
   mariadb:
-    image: mariadb
+    image: mariadb:inception
     build: ./requirements/mariadb
     container_name: mariadb
     volumes:
@@ -14,6 +14,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 30s
     env_file: .env
     secrets:
       - db_password
@@ -21,7 +22,7 @@ services:
       - db_root_password
 
   redis:
-    image: redis
+    image: redis:inception
     build: ./requirements/bonus/redis
     container_name: redis
     networks:
@@ -29,7 +30,7 @@ services:
     restart: unless-stopped
 
   wordpress:
-    image: wordpress
+    image: wordpress:inception
     build: ./requirements/wordpress
     container_name: wordpress
     env_file: .env
@@ -38,8 +39,10 @@ services:
     networks:
       - inception_net
     depends_on:
-      - mariadb
-      - redis
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bash", "-c", "printf '' > /dev/tcp/127.0.0.1/9000"]
@@ -52,15 +55,16 @@ services:
       - wp_admin_password
 
   static:
-    image: static
+    image: static:inception
     build: ./requirements/bonus/static
     container_name: static
+    init: true
     networks:
       - inception_net
     restart: unless-stopped
 
   adminer:
-    image: adminer
+    image: adminer:inception
     build: ./requirements/bonus/adminer
     container_name: adminer
     networks:
@@ -70,7 +74,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx
+    image: nginx:inception
     build: ./requirements/nginx
     container_name: nginx
     env_file: .env
@@ -81,6 +85,8 @@ services:
     depends_on:
       - wordpress
       - static
+      - adminer
+      - uptime-kuma
     ports:
       - "443:443"
     restart: unless-stopped
@@ -91,9 +97,10 @@ services:
       retries: 3
 
   ftp:
-    image: ftp
+    image: ftp:inception
     build: ./requirements/bonus/ftp
     container_name: ftp
+    init: true
     env_file: .env
     volumes:
       - wp_volume:/var/www/html
@@ -107,9 +114,10 @@ services:
       - ftp_password
 
   uptime-kuma:
-    image: uptime-kuma
+    image: uptime-kuma:inception
     build: ./requirements/bonus/uptime-kuma
     container_name: uptime-kuma
+    init: true
     volumes:
       - uptime_data:/app/data
     networks:
@@ -121,19 +129,19 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${HOME}/data/mysql
+      device: /home/lde-medi/data/mysql
       o: bind
   wp_volume:
     driver: local
     driver_opts:
       type: none
-      device: ${HOME}/data/wordpress
+      device: /home/lde-medi/data/wordpress
       o: bind
   uptime_data:
     driver: local
     driver_opts:
       type: none
-      device: ${HOME}/data/uptime-kuma
+      device: /home/lde-medi/data/uptime-kuma
       o: bind
 
 networks:

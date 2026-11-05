@@ -5,6 +5,7 @@ RUN	apt-get update \
 	nginx \
 	openssl \
 	gettext \
+	curl \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY	conf/nginx.conf /etc/nginx/templates/nginx.conf
