@@ -93,6 +93,10 @@ Contains one password per file. Each file is mounted read-only inside the releva
 
 Inside each `init.sh`, passwords are read from the mounted secret file rather than from environment variables:
 
+```sh
+MYSQL_PASSWORD=$(cat /run/secrets/db_password)
+```
+
 ### Creating the secret files
 
 Before the first run, create all secret files manually:
@@ -138,6 +142,110 @@ docker compose up --build
 | `make fclean` | `clean` + delete `/home/lde-medi/data` + Docker build cache (secrets are kept) |
 | `make re` | `fclean` + `all` |
 | `make help` | List the targets |
+
+---
+
+## Services
+
+Each service runs in its own container, built from its own Dockerfile on `debian:bookworm`. The quick checks below assume you are at the repository root; to reuse the values from `srcs/.env` in your shell, load it first:
+
+```bash
+set -a; . srcs/.env; set +a
+docker compose -f srcs/docker-compose.yml ps   # every container Up, mariadb/wordpress/nginx (healthy)
+```
+
+### NGINX
+
+Single entrypoint of the stack, listening on 443 only with TLSv1.2/TLSv1.3. A self-signed certificate is generated at startup (`nginx/tools/init.sh`), then requests are routed by `server_name`: PHP to `wordpress:9000` (FastCGI), static files from the shared WordPress volume, bonus subdomains to their containers.
+
+To check that only HTTPS is served and which TLS versions are accepted:
+
+```bash
+curl -I http://${DOMAIN_NAME}                                     # connection refused (port 80 not published)
+curl -kI https://${DOMAIN_NAME}                                   # HTTP/1.1 200
+openssl s_client -connect ${DOMAIN_NAME}:443 -tls1_2 </dev/null 2>/dev/null | grep Protocol
+openssl s_client -connect ${DOMAIN_NAME}:443 -tls1_3 </dev/null 2>/dev/null | grep Protocol
+openssl s_client -connect ${DOMAIN_NAME}:443 -tls1_1 </dev/null   # handshake failure
+```
+
+### WordPress + php-fpm
+
+php-fpm 8.2 listening on port 9000, no web server in the container. On first start `wordpress/tools/init.sh` downloads WordPress with WP-CLI, writes `wp-config.php`, installs the site, creates the second user (`WP_USER`, role author) and enables the Redis object cache. On later starts the installation is skipped because `wp-config.php` already exists.
+
+To check the installation and the users:
+
+```bash
+docker exec wordpress wp core is-installed --allow-root --path=/var/www/html && echo installed
+docker exec wordpress wp user list --allow-root --path=/var/www/html --fields=user_login,roles
+```
+
+The site is at `https://lde-medi.42.fr`, the dashboard at `https://lde-medi.42.fr/wp-admin`.
+
+### MariaDB
+
+Database server listening on 3306 on the internal network only. `mariadb/tools/init.sh` initializes the data directory on first run, then creates the database, the WordPress user and the admin user, and sets the root password (root can only log in from inside the container).
+
+To log in and check that the database is populated:
+
+```bash
+docker exec -it mariadb mariadb -u root -p          # password in secrets/db_root_password.txt
+```
+```sql
+SHOW DATABASES;
+USE inception_db;
+SHOW TABLES;
+SELECT user_login FROM wp_users;
+SELECT user, host FROM mysql.user;
+```
+
+### Redis (bonus)
+
+In-memory object cache for WordPress (plugin `redis-cache`, limited to 128 MB with LRU eviction), so repeated queries do not hit MariaDB.
+
+To check that WordPress is connected and that keys are being stored:
+
+```bash
+docker exec wordpress wp redis status --allow-root --path=/var/www/html   # Status: Connected
+docker exec redis redis-cli dbsize                                        # > 0 after browsing the site
+docker exec -it redis redis-cli monitor                                   # live commands while reloading a page
+```
+
+### FTP (bonus)
+
+vsftpd giving access to the WordPress volume, with the user chrooted in `/var/www/html` and passive mode on ports 21000-21010. The FTP user shares uid 33 with `www-data`, so uploaded files are directly usable by WordPress.
+
+To list the files and upload one:
+
+```bash
+curl -u "${FTP_USER}:$(cat secrets/ftp_password.txt)" ftp://127.0.0.1/
+echo "hello" > /tmp/test.txt
+curl -u "${FTP_USER}:$(cat secrets/ftp_password.txt)" -T /tmp/test.txt ftp://127.0.0.1/wp-content/
+docker exec wordpress ls -l /var/www/html/wp-content/test.txt                 # owned by www-data
+```
+
+### Static website (bonus)
+
+HTML/CSS site (no PHP) served by `busybox httpd` on port 80 inside the network, reverse-proxied by NGINX on `bonus.lde-medi.42.fr`.
+
+```bash
+curl -k https://bonus.${DOMAIN_NAME} | head
+```
+
+### Adminer (bonus)
+
+Web interface for the database, running on its own php-fpm (port 9000) and reached through NGINX on `adminer.lde-medi.42.fr`. Log in with server `mariadb` and `MYSQL_ADMIN_USER` or `MYSQL_USER`.
+
+```bash
+curl -ks https://adminer.${DOMAIN_NAME} | grep -o '<title>.*</title>'
+```
+
+### Uptime Kuma (bonus)
+
+Monitoring dashboard built from source, used to keep an eye on the availability of every service (HTTP and TCP monitors, history, notifications). Its data lives in the dedicated `uptime_data` volume. Open `https://kuma.lde-medi.42.fr`, create the account on first access, then add monitors such as `mariadb:3306`, `redis:6379` (TCP) or `https://nginx` (HTTP, ignore TLS errors).
+
+```bash
+curl -kI https://kuma.${DOMAIN_NAME}
+```
 
 ---
 
@@ -193,7 +301,14 @@ All persistent data is stored outside the containers in named volumes backed by 
 | wp_volume | /home/lde-medi/data/wordpress | /var/www/html | wordpress, nginx, ftp |
 | uptime_data | /home/lde-medi/data/uptime-kuma | /app/data | uptime-kuma |
 
-Data in these directories survives `docker compose down`. To completely reset the project state:
+Docker prefixes the volume names with the compose project name (`srcs`). To see where a volume stores its data:
+
+```bash
+docker volume ls
+docker volume inspect srcs_wp_volume srcs_db_data | grep device
+```
+
+Data in these directories survives `docker compose down` and a reboot of the VM. To completely reset the project state:
 
 ```bash
 docker compose down
@@ -207,7 +322,12 @@ docker compose up --build
 
 ## Network
 
-All containers communicate over a single internal bridge network named `inception_net`. NGINX is the sole entrypoint for HTTPS traffic. FTP exposes its own ports directly.
+All containers communicate over a single internal bridge network named `inception_net`, resolving each other by service name through Docker's internal DNS. NGINX is the sole entrypoint for HTTPS traffic. FTP exposes its own ports directly.
+
+```bash
+docker network ls                                   # srcs_inception_net
+docker network inspect srcs_inception_net --format '{{range .Containers}}{{.Name}} {{end}}'
+```
 
 | Container | Internal port | External port |
 |---|---|---|
